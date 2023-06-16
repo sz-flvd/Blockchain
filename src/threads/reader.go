@@ -7,6 +7,15 @@
 
 package threads
 
-func Reader() {
+import "sync"
 
+func Reader(node *Node, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for i := range node.readerChannel {
+		// read information about newly mined Blocks from other Nodes
+		// this needs synchronization!!!
+		node.state.blockId = i.blockId
+		node.state.blockPoW = i.blockPoW
+	}
 }

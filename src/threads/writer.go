@@ -7,6 +7,15 @@
 
 package threads
 
-func Writer() {
+import "sync"
 
+func Writer(node *Node, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for i := range node.minerChannel {
+		// broadcast information about mined Block to all Reader threads
+		for _, c := range node.writerChannels {
+			(*c) <- i
+		}
+	}
 }
