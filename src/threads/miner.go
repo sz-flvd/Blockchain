@@ -24,7 +24,11 @@ func Miner(node *Node, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for {
-		b := make([]byte, 0)
+		b, ok := <- node.NewRecordChannel
+		if (!ok) {
+			return
+		}
+
 		data := node.lastBlock.MainHash
 		for _, extra := range node.lastBlock.ExtraHashes {
 			data = append(data, extra...)
@@ -56,10 +60,10 @@ func Miner(node *Node, wg *sync.WaitGroup) {
 
 		mined = false
 
-		node.blocks = append(node.blocks, common.Block{
+		node.Blocks = append(node.Blocks, common.Block{
 			// properly add new block to the Blockchain
 		})
-		node.lastBlock = &node.blocks[len(node.blocks)-1]
+		node.lastBlock = &node.Blocks[len(node.Blocks)-1]
 	}
 }
 
