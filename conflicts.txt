@@ -1,0 +1,42 @@
+Dostaję info "Policzyłem PoW dla nowego bloku K na blockchainie BCa":
+    * Sprawdzam czy PoW jest legitne.
+    * Jeśli jest legitne:
+        - Jeśli BCa ma ten sam hash co mój główny BC:
+            > Roześlij do pozostałych nodów info "Podpinam blok K do blockchainu BC",
+            > Podepnij blok K do BC,
+            > Przenieś rekordy z mojego bloku, które nie znalazły się w bloku potwierdzonym, na wierzch nowego BC.
+                # Dla każdego takiego rekordu roześlij info "Dodaję rekord".
+        - w p.p. (BCa nie jest tym samym co mój BC):
+            > Jeśli BCa znajduje się na mojej liście innych BC:
+                # Przypnij K do BCa z mojej listy,
+                # Zaktualizuj informację o długości BCa,
+                # Jeżeli |BCa| > |BC| + max_wyprzedzenie:
+                    * Usuń moje BC,
+                    * BC := BCa,
+                    * Dalej licz na nowym BC.
+                # w p.p. (|BCa| <= |BC| + max_wyprzedzenie):
+                    * Licz dalej na moim BC.
+            > w p.p. (nie ma BCa na mojej liście):
+                # Dodaj BCa wraz z przypiętym blokiem K do mojej listy innych BC wraz z informacją o tego długości,
+                # Dalsze obliczenia rób na moim BC.
+    * w p.p. (PoW nie jest legitne):
+        - Roześlij info "Odrzucam PoW",
+        - Licz dalej.
+
+
+
+Obliczam PoW:
+    * Rozsyłam info "Policzyłem PoW dla bloku K na blockchainie BC".
+
+Jeśli otrzymam info "Odrzucam twoje PoW":
+    * 
+
+
+
+Dostaję info "Dodaję rekord":
+    * Sprawdź content.
+    * Jeśli mam taki content w swoim bloku:
+        - Zaktualizuj timestamp do najwcześniejszego z ich dwóch.
+    * w p.p. (nie mam takiego contentu w moim nowym bloku):
+        - Dodaj rekord jako nowy (wraz z jego timestampem),
+        - Roześlij info "Dodaję rekord".
