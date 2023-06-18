@@ -1,20 +1,20 @@
 package client
 
 import (
-    "fmt"
-    "net/http"
-    "encoding/json"
 	"bufio"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
-	"io/ioutil"
-	"bytes"
+
 	"krypto.blockchain/src/api"
 )
 
 func HandleInput() {
 	reader := bufio.NewReader(os.Stdin)
-
 
 	for {
 		fmt.Println("Give me a command and I'll do what you ask")
@@ -38,17 +38,17 @@ func HandleInput() {
 }
 
 func getBlock() {
-    var id string
+	var id string
 
 	fmt.Println("Provide block id")
 
 	fmt.Scanln(&id)
-	
+
 	response, err := http.Get("http://localhost:8080/blockchain/" + id)
-    if err != nil {
-        fmt.Println(err.Error())
+	if err != nil {
+		fmt.Println(err.Error())
 		return
-    }
+	}
 
 	responseData, _ := ioutil.ReadAll(response.Body)
 	fmt.Println(string(responseData))
@@ -56,10 +56,10 @@ func getBlock() {
 
 func getCount() {
 	response, err := http.Get("http://localhost:8080/blockchain/count")
-    if err != nil {
-        fmt.Println(err.Error())
+	if err != nil {
+		fmt.Println(err.Error())
 		return
-    }
+	}
 
 	responseData, _ := ioutil.ReadAll(response.Body)
 	fmt.Println("Count = " + string(responseData))
@@ -72,31 +72,41 @@ func getLocalChain() {
 
 	fmt.Scanln(&id)
 	response, err := http.Get("http://localhost:8080/blockchain/local/" + id)
-    if err != nil {
-        fmt.Println(err.Error())
+	if err != nil {
+		fmt.Println(err.Error())
 		return
-    }
+	}
 
 	responseData, _ := ioutil.ReadAll(response.Body)
 	fmt.Println(string(responseData))
 }
 
 func addBlock() {
-	var data string
+	var data []string
 
 	fmt.Println("Provide data for record")
 
-	fmt.Scanln(&data)
+	for {
+		singleTransaction := ""
+		fmt.Scanln(&singleTransaction)
+
+		if singleTransaction == "" {
+			break
+		}
+
+		data = append(data, singleTransaction)
+
+	}
 
 	// for now (and possibly for ever) we send requests to all nodes
 	request := api.AddRecordRequest{Content: data, Receivers: []int{}}
 	json, _ := json.Marshal(request)
 
 	response, err := http.Post("http://localhost:8080/blockchain", "application/json", bytes.NewBuffer(json))
-    if err != nil {
-        fmt.Println("Ooops..." + err.Error())
+	if err != nil {
+		fmt.Println("Ooops..." + err.Error())
 		return
-    }
+	}
 
 	responseData, _ := ioutil.ReadAll(response.Body)
 	fmt.Println(string(responseData))

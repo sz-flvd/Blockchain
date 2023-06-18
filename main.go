@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+
 	"krypto.blockchain/src/api"
-	"krypto.blockchain/src/threads"
 	"krypto.blockchain/src/client"
+	"krypto.blockchain/src/threads"
 )
 
 func main() {
@@ -13,7 +14,7 @@ func main() {
 	// TODO init nodes properly
 	nodes := make([]threads.Node, 6)
 	for i := 0; i < 6; i++ {
-		nodes[i].NewRecordChannel = make(chan []byte, 4)
+		nodes[i].NewRecordChannel = make(chan []string, 4)
 	}
 
 	manager := api.Manager{Nodes: nodes}
@@ -23,4 +24,3 @@ func main() {
 
 	server.Run(&manager)
 }
-
