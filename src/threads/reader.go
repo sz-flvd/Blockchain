@@ -37,7 +37,7 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 			recordId := addedRecord.Index
 			ts := addedRecord.Timestamp
 			content := addedRecord.Content
-			foundPtr, _, doesContain := node.IndexOfRecordContainingContent(content)
+			foundPtr, _, doesContain := node.FindRecordContainingContent(content)
 			if doesContain {
 				// Update the timestamp to the earliest
 				foundPtr.UpdateEarlierTimestamp(ts)
@@ -62,8 +62,18 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 				}
 			}
 		case confirmedRecord := <-node.readerChannelRecordConfirm:
-			// append(slice[:s], slice[s+1:]...)
-			continue
+			confirmedRecordDerefed := *(confirmedRecord)
+			content := confirmedRecordDerefed.Content
+			_, foundIdx, doesContain := node.FindAwaitingRecord(content)
+			if doesContain {
+				// Increment confirmations for this record.
+				node.awaitingRecords[foundIdx].uint++
+				if node.awaitingRecords[foundIdx].uint >= node.networkSize { // All other nodes confirmed this record.
+					// Pop this record from awaiting slice and push it into current block records.
+					node.currentBlock.Records = append(node.currentBlock.Records, node.awaitingRecords[foundIdx].Record)
+					node.awaitingRecords = append(node.awaitingRecords[:foundIdx], node.awaitingRecords[foundIdx+1:]...)
+				}
+			}
 		}
 	}
 }

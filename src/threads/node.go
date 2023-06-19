@@ -84,17 +84,31 @@ func Node_CreateNode(
 	return newNode
 }
 
-func (node *Node) IndexOfRecordContainingContent(content string) (*common.Record, uint, bool) {
+func (node *Node) FindAwaitingRecord(content string) (*struct {
+	common.Record
+	uint
+}, uint, bool) {
+	for idx, myR := range node.awaitingRecords {
+		r := myR.Record
+		if r.Content == content {
+			return &myR, uint(idx), true
+		}
+	}
+
+	return nil, 0, false
+}
+
+func (node *Node) FindRecordContainingContent(content string) (*common.Record, uint, bool) {
 	for idx, myR := range node.currentBlock.Records {
 		if myR.Content == content {
 			return &myR, uint(idx), true
 		}
 	}
 
-	for idx, myR := range node.awaitingRecords {
-		if myR.Content == content {
-			return &myR.Record, uint(idx), true
-		}
+	found, idx, doesContain := node.FindAwaitingRecord(content)
+	if doesContain {
+		foundRecord := (*found).Record
+		return &foundRecord, idx, true
 	}
 
 	return nil, 0, false
