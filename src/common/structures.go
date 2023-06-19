@@ -19,6 +19,12 @@ type Block struct {
 	Records     []Record // list of Records within the Block
 }
 
+func (r *Record) UpdateEarlierTimestamp(ts int64) {
+	if ts < r.Timestamp {
+		r.Timestamp = ts
+	}
+}
+
 func (r *Record) ToBytes() []byte {
 	data := make([]byte, 0)
 
