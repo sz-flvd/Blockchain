@@ -2,7 +2,8 @@ package threads
 
 import (
 	"sync"
-
+    "time"
+    
 	"krypto.blockchain/src/common"
 )
 
@@ -57,7 +58,7 @@ func Node_CreateNode(
 	newNode := &Node{
 		index:                       index,
 		networkSize:                 networkSize,
-		NewRecordChannel:            make(chan []string),
+		NewRecordChannel:            make(chan []string, 8),
 		readerChannelBlockMined:     readerChannelBlockMined,
 		readerChannelRecordAdd:      readerChannelRecordAdd,
 		readerChannelRecordConfirm:  readerChannelRecordConfirm,
@@ -73,6 +74,18 @@ func Node_CreateNode(
 			uint
 		}, 0),
 	}
+	
+	genesisBlock := common.Block{
+    		Index:       0,
+    		Timestamp:   time.Now().UnixNano(),
+    		MainHash:    make([]byte, 32),
+    		ExtraHashes: make([][]byte, 0),
+    		PoW:         make([]byte, 0),
+    		Records:     make([]common.Record, 0),
+    	}
+    
+    	newNode.Chain = append(newNode.Chain, genesisBlock)
+    	newNode.lastBlock = &genesisBlock
 
 	return newNode
 }
