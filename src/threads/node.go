@@ -13,23 +13,22 @@ type Internal struct {
 	Timestamp int64
 }
 
+type RecordAdd struct {
+    record *common.Record
+    sender uint
+}
+
 /* Structure shared by all miner subthreads */
 type Node struct {
 	index                   uint
 	networkSize             uint
 	NewRecordChannel        chan []string
 	readerChannelBlockMined chan Internal // this is the channel on which Reader waits for information about newly mined blocks
-	readerChannelRecordAdd  chan struct {
-		*common.Record
-		uint
-	} // Reader gets info about newly added records.
+	readerChannelRecordAdd  chan RecordAdd // Reader gets info about newly added records.
 	readerChannelRecordConfirm chan *common.Record // Reader gets confirmation from other Nodes about his newly added record.
 	minerChannel               chan Internal       // Miner will inform Writer about a newly mined Block through this channel
 	writerChannelsBlockMined   []*chan Internal    // Writer will write to all of these channels when a new Block is mined by this Node
-	writerChannelsRecordAdd    []*chan struct {
-		*common.Record
-		uint
-	}
+	writerChannelsRecordAdd    []*chan RecordAdd
 	writerChannelsRecordConfirm []*chan *common.Record
 	/* 	Internal state of Node (naming may need to be adjusted;
 	Reader will update this when a new block is mined outside of this Node
@@ -49,16 +48,10 @@ func Node_CreateNode(
 	index uint,
 	networkSize uint,
 	readerChannelBlockMined chan Internal,
-	readerChannelRecordAdd chan struct {
-		*common.Record
-		uint
-	},
+	readerChannelRecordAdd chan RecordAdd,
 	readerChannelRecordConfirm chan *common.Record,
 	writerChannelsBlockMined []*chan Internal,
-	writerChannelsRecordAdd []*chan struct {
-		*common.Record
-		uint
-	},
+	writerChannelsRecordAdd []*chan RecordAdd,
 	writerChannelsRecordConfirm []*chan *common.Record,
 ) *Node {
 	newNode := &Node{

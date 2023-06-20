@@ -18,15 +18,19 @@ import (
 	"krypto.blockchain/src/common"
 )
 
+var d float64
+var n int 
+
 const (
 	l = sha256.Size
-	d = 1.0 // this needs to be adjusted and set as a runtime parametre
-	n = 8   // this needs to be adjusted and set as a runtime parametre
 )
 
-func Miner(node *Node, wg *sync.WaitGroup) {
+func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 	defer wg.Done()
 
+    d = divisor
+    n = sidelinks
+    
 	for transactions := range node.NewRecordChannel {
 		// if !ok {
 		// 	return

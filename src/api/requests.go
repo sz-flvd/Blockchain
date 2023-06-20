@@ -10,7 +10,6 @@ type AddRecordRequest struct {
 	Receivers []int    // ids of nodes that are expected handle the request. Empty if no preference
 }
 
-// TODO docs
 type AddRecordResponse struct {
 	BlockId int // id of block the record will be added to
 	Index   int // index of record within block
