@@ -28,29 +28,26 @@ const (
 func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 	defer wg.Done()
 
-    d = divisor
-    n = sidelinks
-    
+	d = divisor
+	n = sidelinks
+
 	for transactions := range node.NewRecordChannel {
 		// if !ok {
 		// 	return
 		// }
-		prevBlockHash := calcBlockHash(node.lastBlock)
-		sideLinks := calcSidelinks(node.Chain)
-		records := createRecords(transactions)
-		newBlock := common.Block{
-			Index:       node.lastBlock.Index + 1,
-			MainHash:    prevBlockHash[:],
-			ExtraHashes: sideLinks,
-			Records:     records,
-		}
-		data := make([]byte, 0)
-		data = append(data, byte(newBlock.Index))
-		data = append(data, newBlock.MainHash...)
-		for _, hash := range newBlock.ExtraHashes {
-			data = append(data, hash...)
+		allTransactions := [][]string{transactions}
+
+	transactionsLoop:
+		for {
+			select {
+			case nT := <-node.NewRecordChannel:
+				allTransactions = append(allTransactions, nT)
+			case <-time.After(1 * time.Millisecond):
+				break transactionsLoop
+			}
 		}
 
+		data, newBlock := prepareBlockAndData(node, transactions)
 		h := sha256.Sum256(data)
 		mined := false
 
@@ -75,6 +72,24 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 					break
 				}
 				node.chainMutex.Unlock()
+			}
+			select {
+			case newTransaction := <-node.NewRecordChannel:
+				allTransactions = append(allTransactions, newTransaction)
+			readerLoop:
+				for {
+					select {
+					case nT := <-node.NewRecordChannel:
+						allTransactions = append(allTransactions, nT)
+					case <-time.After(1 * time.Millisecond):
+						break readerLoop
+					}
+				}
+				data, newBlock = prepareBlockAndData(node, transactions)
+				h = sha256.Sum256(data)
+				mined = false
+			case <-time.After(1 * time.Millisecond):
+
 			}
 		}
 
@@ -112,6 +127,26 @@ func tokenValue(token [l]byte) float64 {
 	}
 
 	return val
+}
+
+func prepareBlockAndData(node *Node, transactions []string) ([]byte, common.Block) {
+	prevBlockHash := calcBlockHash(node.lastBlock)
+	sideLinks := calcSidelinks(node.Chain)
+	records := createRecords(transactions)
+	newBlock := common.Block{
+		Index:       node.lastBlock.Index + 1,
+		MainHash:    prevBlockHash[:],
+		ExtraHashes: sideLinks,
+		Records:     records,
+	}
+	data := make([]byte, 0)
+	data = append(data, byte(newBlock.Index))
+	data = append(data, newBlock.MainHash...)
+	for _, hash := range newBlock.ExtraHashes {
+		data = append(data, hash...)
+	}
+
+	return data, newBlock
 }
 
 func calcBlockHash(b *common.Block) []byte {
