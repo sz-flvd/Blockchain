@@ -60,17 +60,16 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 			// pick random b
 			token := sha256.Sum256(append(h[:], b...))
 			timestamp = time.Now().UnixNano()
-			fmt.Printf("Node %v calculating hash value = %v vs diff %v\n", node.index, tokenValue(token), math.Pow(2.0, float64(l))/d)
-			if tokenValue(token) < math.Pow(2.0, float64(l))/d {
+			fmt.Printf("Node %v calculating hash value = %v vs diff %v\n", node.index, tokenValue(token), math.Pow(2.0, -d))
+			if tokenValue(token) < math.Pow(2.0, -d) {
 				mined = true
 				break
 			} else if node.state.blockPoW != nil { // this needs some synchronization!!!
-
 				// I guess it can work this way, that checking elements of the chain has to be synchronized
 				// we may on the other hand consider creating separate thread that will provide synchronized RW actions on chain
 				// through usage of select statement
 				node.chainMutex.Lock()
-				if node.state.blockId == node.lastBlock.Index {
+				if node.state.blockId != node.lastBlock.Index {
 					break
 				}
 				node.chainMutex.Unlock()
@@ -122,14 +121,10 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 }
 
 func tokenValue(token [l]byte) float64 {
-	val := 0.0
-
-	for _, b := range token {
-		val *= 2.0
-		val += float64(b)
-	}
-
-	return val
+    // This is BAD, but I don't know how to do this correctly.
+    // We have 32 bytes of output and want to get 8 bit float...
+	val := binary.BigEndian.Uint64(token[0 : 8])
+	return float64(val) / float64(^uint(0))
 }
 
 func prepareBlockAndData(node *Node, records []common.Record) ([]byte, common.Block) {
