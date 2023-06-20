@@ -16,17 +16,20 @@ import (
 func Reader(node *Node, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	for i := range node.readerChannelBlockMined {
-		// read information about newly mined Blocks from other Nodes
-		// this needs synchronization!!!
-		node.state.blockId = i.blockId
-		node.state.blockPoW = i.blockPoW
-	}
+	// for i := range node.readerChannelBlockMined {
+	// 	// read information about newly mined Blocks from other Nodes
+	// 	// this needs synchronization!!!
+
+	// }
 
 	for {
 		select {
-		case <-node.readerChannelBlockMined:
-			continue
+		case i := <-node.readerChannelBlockMined:
+			node.chainMutex.Lock()
+			node.state.blockId = i.blockId
+			node.state.blockPoW = i.blockPoW
+			node.state.Timestamp = i.Timestamp
+			node.chainMutex.Unlock()
 		case addedRecordData := <-node.readerChannelRecordAdd:
 			senderId := addedRecordData.sender
 			addedrecordPtr := addedRecordData.record
@@ -43,7 +46,11 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 				foundPtr.UpdateEarlierTimestamp(ts)
 			} else {
 				// Add a new Record with the same data to my structure and post for confirmations.
-				myNewRecord := common.Record{recordId, ts, content}
+				myNewRecord := common.Record{
+					Index:     recordId,
+					Timestamp: ts,
+					Content:   content,
+				}
 				awaiting := struct {
 					common.Record
 					uint
@@ -61,6 +68,7 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 		case confirmedRecord := <-node.readerChannelRecordConfirm:
 			confirmedRecordDerefed := *(confirmedRecord)
 			content := confirmedRecordDerefed.Content
+			node.recordMutex.Lock()
 			_, foundIdx, doesContain := node.FindAwaitingRecord(content)
 			if doesContain {
 				// Increment confirmations for this record.
@@ -69,8 +77,11 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 					// Pop this record from awaiting slice and push it into current block records.
 					node.currentBlock.Records = append(node.currentBlock.Records, node.awaitingRecords[foundIdx].Record)
 					node.awaitingRecords = append(node.awaitingRecords[:foundIdx], node.awaitingRecords[foundIdx+1:]...)
+					// node.hasNewConfirmedRecords = true
+					node.NewRecordChannel <- node.awaitingRecords[foundIdx].Record
 				}
 			}
+			node.recordMutex.Unlock()
 		}
 	}
 }
