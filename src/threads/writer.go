@@ -14,7 +14,7 @@ func Writer(node *Node, wg *sync.WaitGroup) {
 
 	for i := range node.minerChannel {
 		// broadcast information about mined Block to all Reader threads
-		for _, c := range node.writerChannels {
+		for _, c := range node.writerChannelsBlockMined {
 			(*c) <- i
 		}
 	}

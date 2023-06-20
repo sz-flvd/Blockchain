@@ -1,0 +1,60 @@
+Dostaję info "Policzyłem PoW dla nowego bloku K na blockchainie BCa": [readerChannelMinedBlock]
+    * Sprawdzam czy PoW jest legitne.
+    * Jeśli jest legitne:
+        - Jeśli BCa ma ten sam hash co mój główny BC:
+            > Podepnij blok K do BC,
+            > Przenieś rekordy z mojego bloku, które nie znalazły się w bloku potwierdzonym, do mojej listy wyczekiwanych rekordów.
+                # Dla każdego takiego rekordu roześlij info "Dodaję rekord z timestampem" (readerChannelRecordAdd).
+        - w p.p. (BCa nie jest tym samym co mój BC):
+            > Jeśli BCa znajduje się na mojej liście innych BC:
+                # Przypnij K do BCa z mojej listy,
+                # Zaktualizuj informację o długości BCa,
+                # Jeżeli |BCa| > |BC| + max_wyprzedzenie:
+                    * Usuń moje BC,
+                    * BC := BCa,
+                    * Dalej licz na nowym BC.
+                # w p.p. (|BCa| <= |BC| + max_wyprzedzenie):
+                    * Licz dalej na moim BC.
+            > w p.p. (nie ma BCa na mojej liście):
+                # Dodaj BCa wraz z przypiętym blokiem K do mojej listy innych BC wraz z informacją o tego długości,
+                # Dalsze obliczenia rób na moim BC.
+    * w p.p. (PoW nie jest legitne):
+        - Roześlij info "Odrzucam PoW",
+        - Licz dalej.
+
+
+
+Obliczam PoW: [minerChannel]
+    * Rozsyłam info "Policzyłem PoW dla bloku K na blockchainie BC". [writerChannels]
+
+Jeśli otrzymam info "Odrzucam twoje PoW":
+    * 
+
+
+
+Otrzymuję request "Dodaj rekord":
+    * Jeśli nie mam takiego rekordu w moim bloku ani na mojej liście wyczekiwanych:
+        - Oblicz timestamp,
+        - Dodaj rekord do mojej listy wyczekiwanych rekordów, wraz z licznikiem jego potwierdzeń ustawionym na 1,
+        - Roześlij info "Dodaję rekord z timestampem".
+
+
+Dostaję info "Dodaję rekord z timestampem" (readerChannelRecordAdd):
+    * Wyślij do nadawcy info "Potwierdzam ten rekord".
+    * Sprawdź content.
+    * Jeśli mam taki content w moim bloku lub na mojej liście wyczekiwanych:
+        - Zaktualizuj timestamp do najwcześniejszego z ich dwóch.
+    * w p.p. (nie mam takiego contentu w moim nowym bloku ani na mojej liście wyczekiwanych):
+        - Dodaj rekord jako nowy (wraz z jego timestampem) na moją listę wyczekiwanych,
+        - Ustaw jego licznik potwierdzeń na 1,
+        - Roześlij info "Dodaję rekord z timestampem".
+
+
+Gdy otrzymam "Potwierdzam rekord" (readerChannelRecordConfirm):
+    * Jeśli mam ten rekord na swojej liście wyczekiwanych:
+        - Inkrementuj licznik potwierdzeń tego rekordu,
+        - Jeśli licznik potwierdzeń == liczba nodów:
+            > Dodaj rekord do bloku,
+            > Usuń ten rekord z listy wyczekiwanych,
+            > Zrestartuj liczenie PoW.
+
