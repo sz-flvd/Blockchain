@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 
+	"krypto.blockchain/src/common"
 	"krypto.blockchain/src/threads"
 )
 
@@ -17,14 +18,18 @@ func (manager *Manager) AddRecord(request AddRecordRequest) (*AddRecordResponse,
 	content := request.Content
 
 	for _, i := range request.Receivers {
-		if i < len(manager.Nodes) {
-			manager.Nodes[i].NewRecordChannel <- content
+		for _, trans := range content {
+			if i < len(manager.Nodes) {
+				manager.Nodes[i].NewRecordChannel <- common.Record{Content: trans}
+			}
 		}
 	}
 
 	if len(request.Receivers) == 0 {
-		for i := range manager.Nodes {
-			manager.Nodes[i].NewRecordChannel <- content
+		for _, trans := range content {
+			for i := range manager.Nodes {
+				manager.Nodes[i].NewRecordChannel <- common.Record{Content: trans}
+			}
 		}
 	}
 

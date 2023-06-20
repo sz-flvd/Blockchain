@@ -2,8 +2,8 @@ package threads
 
 import (
 	"sync"
-    "time"
-    
+	"time"
+
 	"krypto.blockchain/src/common"
 )
 
@@ -15,30 +15,32 @@ type Internal struct {
 }
 
 type RecordAdd struct {
-    record *common.Record
-    sender uint
+	record *common.Record
+	sender uint
 }
 
 /* Structure shared by all miner subthreads */
 type Node struct {
-	index                   uint
-	networkSize             uint
-	NewRecordChannel        chan []string
-	readerChannelBlockMined chan Internal // this is the channel on which Reader waits for information about newly mined blocks
-	readerChannelRecordAdd  chan RecordAdd // Reader gets info about newly added records.
-	readerChannelRecordConfirm chan *common.Record // Reader gets confirmation from other Nodes about his newly added record.
-	minerChannel               chan Internal       // Miner will inform Writer about a newly mined Block through this channel
-	writerChannelsBlockMined   []*chan Internal    // Writer will write to all of these channels when a new Block is mined by this Node
-	writerChannelsRecordAdd    []*chan RecordAdd
+	index                       uint
+	networkSize                 uint
+	NewRecordChannel            chan common.Record
+	readerChannelBlockMined     chan Internal       // this is the channel on which Reader waits for information about newly mined blocks
+	readerChannelRecordAdd      chan RecordAdd      // Reader gets info about newly added records.
+	readerChannelRecordConfirm  chan *common.Record // Reader gets confirmation from other Nodes about his newly added record.
+	minerChannel                chan Internal       // Miner will inform Writer about a newly mined Block through this channel
+	writerChannelsBlockMined    []*chan Internal    // Writer will write to all of these channels when a new Block is mined by this Node
+	writerChannelsRecordAdd     []*chan RecordAdd
 	writerChannelsRecordConfirm []*chan *common.Record
 	/* 	Internal state of Node (naming may need to be adjusted;
 	Reader will update this when a new block is mined outside of this Node
 	and Miner will check if it still needs to mine the current Block by reading any updates in this struct) */
-	state           Internal       // So i figure access to this AND Chain has to be synced?
-	Chain           []common.Block // Holds all Blocks mined in the current session
-	lastBlock       *common.Block  // pointer to last Block mined in the current session (idk if this will be needed)
-	currentBlock    common.Block   // block we're currently calculating PoW on.
-	chainMutex      sync.Mutex
+	state        Internal       // So i figure access to this AND Chain has to be synced?
+	Chain        []common.Block // Holds all Blocks mined in the current session
+	lastBlock    *common.Block  // pointer to last Block mined in the current session (idk if this will be needed)
+	currentBlock common.Block   // block we're currently calculating PoW on.
+	chainMutex   sync.Mutex
+	recordMutex  sync.Mutex
+	// hasNewConfirmedRecords bool
 	awaitingRecords []struct {
 		common.Record
 		uint
@@ -58,7 +60,7 @@ func Node_CreateNode(
 	newNode := &Node{
 		index:                       index,
 		networkSize:                 networkSize,
-		NewRecordChannel:            make(chan []string, 8),
+		NewRecordChannel:            make(chan common.Record, 8),
 		readerChannelBlockMined:     readerChannelBlockMined,
 		readerChannelRecordAdd:      readerChannelRecordAdd,
 		readerChannelRecordConfirm:  readerChannelRecordConfirm,
@@ -69,23 +71,25 @@ func Node_CreateNode(
 		state:                       Internal{},
 		Chain:                       make([]common.Block, 0),
 		chainMutex:                  sync.Mutex{},
+		recordMutex:                 sync.Mutex{},
+		// hasNewConfirmedRecords:      false,
 		awaitingRecords: make([]struct {
 			common.Record
 			uint
 		}, 0),
 	}
-	
+
 	genesisBlock := common.Block{
-    		Index:       0,
-    		Timestamp:   time.Now().UnixNano(),
-    		MainHash:    make([]byte, 32),
-    		ExtraHashes: make([][]byte, 0),
-    		PoW:         make([]byte, 0),
-    		Records:     make([]common.Record, 0),
-    	}
-    
-    	newNode.Chain = append(newNode.Chain, genesisBlock)
-    	newNode.lastBlock = &genesisBlock
+		Index:       0,
+		Timestamp:   time.Now().UnixNano(),
+		MainHash:    make([]byte, 32),
+		ExtraHashes: make([][]byte, 0),
+		PoW:         make([]byte, 0),
+		Records:     make([]common.Record, 0),
+	}
+
+	newNode.Chain = append(newNode.Chain, genesisBlock)
+	newNode.lastBlock = &genesisBlock
 
 	return newNode
 }

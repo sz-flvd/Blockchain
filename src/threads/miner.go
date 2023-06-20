@@ -11,6 +11,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -19,7 +20,7 @@ import (
 )
 
 var d float64
-var n int 
+var n int
 
 const (
 	l = sha256.Size
@@ -31,27 +32,27 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 	d = divisor
 	n = sidelinks
 
-	for transactions := range node.NewRecordChannel {
+	for record := range node.NewRecordChannel {
 		// if !ok {
 		// 	return
 		// }
-		allTransactions := [][]string{transactions}
+		records := []common.Record{record}
 
-	transactionsLoop:
+	scanAllRecords:
 		for {
 			select {
 			case nT := <-node.NewRecordChannel:
-				allTransactions = append(allTransactions, nT)
+				records = append(records, nT)
 			case <-time.After(1 * time.Millisecond):
-				break transactionsLoop
+				break scanAllRecords
 			}
 		}
 
-		data, newBlock := prepareBlockAndData(node, transactions)
+		data, newBlock := prepareBlockAndData(node, records)
 		h := sha256.Sum256(data)
 		mined := false
 
-		b := make([]byte, l)
+		b := make([]byte, l/2)
 		var timestamp int64
 		for {
 
@@ -59,6 +60,7 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 			// pick random b
 			token := sha256.Sum256(append(h[:], b...))
 			timestamp = time.Now().UnixNano()
+			fmt.Printf("Node %v calculating hash value = %v vs diff %v\n", node.index, tokenValue(token), math.Pow(2.0, float64(l))/d)
 			if tokenValue(token) < math.Pow(2.0, float64(l))/d {
 				mined = true
 				break
@@ -75,24 +77,24 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 			}
 			select {
 			case newTransaction := <-node.NewRecordChannel:
-				allTransactions = append(allTransactions, newTransaction)
+				records = append(records, newTransaction)
 			readerLoop:
 				for {
 					select {
 					case nT := <-node.NewRecordChannel:
-						allTransactions = append(allTransactions, nT)
+						records = append(records, nT)
 					case <-time.After(1 * time.Millisecond):
 						break readerLoop
 					}
 				}
-				data, newBlock = prepareBlockAndData(node, transactions)
+				data, newBlock = prepareBlockAndData(node, records)
 				h = sha256.Sum256(data)
 				mined = false
 			case <-time.After(1 * time.Millisecond):
 
 			}
 		}
-
+		fmt.Printf("Node %v done \n", node.index)
 		// We need something here to synchronize with all other nodes, that they accept out firsthood
 		// i propose something like channel waiting for 8 messeges, if all are OK then accept
 		// in case anyone does not accept we need to figure out some protocol
@@ -122,17 +124,18 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 func tokenValue(token [l]byte) float64 {
 	val := 0.0
 
-	for i, b := range token {
-		val += float64(b) * math.Pow(2.0, float64(i))
+	for _, b := range token {
+		val *= 2.0
+		val += float64(b)
 	}
 
 	return val
 }
 
-func prepareBlockAndData(node *Node, transactions []string) ([]byte, common.Block) {
+func prepareBlockAndData(node *Node, records []common.Record) ([]byte, common.Block) {
 	prevBlockHash := calcBlockHash(node.lastBlock)
 	sideLinks := calcSidelinks(node.Chain)
-	records := createRecords(transactions)
+	// records := createRecords(records)
 	newBlock := common.Block{
 		Index:       node.lastBlock.Index + 1,
 		MainHash:    prevBlockHash[:],
@@ -226,18 +229,4 @@ func calcSidelinks(chain []common.Block) [][]byte {
 	}
 
 	return sidelinks
-}
-
-func createRecords(transactions []string) []common.Record {
-	records := make([]common.Record, len(transactions))
-
-	for i, transaction := range transactions {
-		records[i] = common.Record{
-			Index:     uint32(i),
-			Content:   transaction,
-			Timestamp: time.Now().UnixNano(),
-		}
-	}
-
-	return records
 }
