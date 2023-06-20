@@ -25,11 +25,11 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case newBlock := <-node.readerChannelBlockMined:
+		case <-node.readerChannelBlockMined:
 			continue
 		case addedRecordData := <-node.readerChannelRecordAdd:
-			senderId := addedRecordData.uint
-			addedrecordPtr := addedRecordData.Record
+			senderId := addedRecordData.sender
+			addedrecordPtr := addedRecordData.record
 			addedRecord := *(addedrecordPtr)
 			// Send a confirmation to the sender
 			*node.writerChannelsRecordConfirm[senderId] <- addedrecordPtr
@@ -54,10 +54,7 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 				node.awaitingRecords = append(node.awaitingRecords, awaiting)
 				for idx := uint(0); idx < node.networkSize; idx++ {
 					if idx != node.index {
-						*node.writerChannelsRecordAdd[idx] <- struct {
-							*common.Record
-							uint
-						}{Record: &myNewRecord, uint: node.index}
+						*node.writerChannelsRecordAdd[idx] <- RecordAdd{record: &myNewRecord, sender: node.index}
 					}
 				}
 			}

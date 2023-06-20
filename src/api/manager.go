@@ -9,7 +9,7 @@ import (
 )
 
 type Manager struct {
-	Nodes []threads.Node
+	Nodes []*threads.Node
 }
 
 // Fun fact: I believe that return type (*something, error) is actually a monad 'Either'
