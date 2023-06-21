@@ -29,11 +29,11 @@ func (r *Record) ToBytes() []byte {
 	data := make([]byte, 0)
 
 	byteHelper := make([]byte, 0)
-	binary.LittleEndian.PutUint64(byteHelper, uint64(r.Index))
+	byteHelper = binary.LittleEndian.AppendUint64(byteHelper, uint64(r.Index))
 	data = append(data, byteHelper...)
 
 	byteHelper = make([]byte, 0)
-	binary.LittleEndian.PutUint64(byteHelper, uint64(r.Timestamp))
+	byteHelper = binary.LittleEndian.AppendUint64(byteHelper, uint64(r.Timestamp))
 	data = append(data, byteHelper...)
 
 	data = append(data, []byte(r.Content)...)
