@@ -9,7 +9,6 @@ package threads
 
 import (
 	"sync"
-	"fmt"
 
 	"krypto.blockchain/src/common"
 )
@@ -32,8 +31,6 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 			node.state.Timestamp = i.Timestamp
 			node.chainMutex.Unlock()
 		case addedRecordData := <-node.readerChannelRecordAdd:
-		fmt.Printf("Node %v new recod=rd it\n", node.index)
-
 			senderId := addedRecordData.sender
 			addedrecordPtr := addedRecordData.record
 			addedRecord := *(addedrecordPtr)
