@@ -8,6 +8,8 @@
 package threads
 
 import (
+	"crypto/sha256"
+	"math"
 	"sync"
 
 	"krypto.blockchain/src/common"
@@ -84,4 +86,19 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 			node.recordMutex.Unlock()
 		}
 	}
+}
+
+func verifyBlock(block *common.Block) bool {
+	data := make([]byte, 0)
+	data = append(data, byte(block.Index))
+	data = append(data, block.MainHash...)
+	for _, hash := range block.ExtraHashes {
+		data = append(data, hash...)
+	}
+
+	h := sha256.Sum256(data)
+	token := sha256.Sum256(append(h[:], block.PoW...))
+
+	return TokenValue(token) < math.Pow(2.0, -d)
+
 }
