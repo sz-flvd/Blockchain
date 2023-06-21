@@ -70,6 +70,7 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 				// through usage of select statement
 				node.chainMutex.Lock()
 				if node.state.blockId != node.lastBlock.Index {
+				    node.chainMutex.Unlock()
 					break
 				}
 				node.chainMutex.Unlock()
