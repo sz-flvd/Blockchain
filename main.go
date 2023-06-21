@@ -68,7 +68,7 @@ func initThreads(nodes []*threads.Node, d float64, n int) {
 
 // e.g. go run main.go --nodes=5 --d=2.0 --n=4
 func main() {
-	fmt.Println("Jebac krypto") // +1
+	fmt.Println("***** ******") // +1
 
 	numOfNodes := flag.Uint("nodes", 2, "an unsigned int")
 	miningDivisor := flag.Float64("d", 0.01, "a float")
