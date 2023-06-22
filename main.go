@@ -14,16 +14,18 @@ import (
 func createNodes(n uint) []*threads.Node {
 	nodes := make([]*threads.Node, n)
 
-	blockMinedChannels, recordAddChannels, recordConfirmChannels := initChannels(n)
+	blockConfirmChannels, blockMinedChannels, recordAddChannels, recordConfirmChannels := initChannels(n)
 
 	for i := uint(0); i < n; i++ {
 		nodes[i] = threads.Node_CreateNode(
 			uint(i),
 			n,
-			*blockMinedChannels[i],
-			*recordAddChannels[i],
-			*recordConfirmChannels[i],
+			blockMinedChannels[i],
+			blockConfirmChannels[i],
+			recordAddChannels[i],
+			recordConfirmChannels[i],
 			blockMinedChannels,
+			blockConfirmChannels,
 			recordAddChannels,
 			recordConfirmChannels)
 	}
@@ -31,23 +33,27 @@ func createNodes(n uint) []*threads.Node {
 	return nodes
 }
 
-func initChannels(n uint) ([]*chan threads.Internal, []*chan threads.RecordAdd, []*chan *common.Record) {
+func initChannels(n uint) ([]chan threads.MessageBool, []chan threads.MessageBlock, []chan threads.RecordAdd, []chan *common.Record) {
 	// these are buffered channel of size n - dunno, thought it might be a good number
-	blockMinedChannels := make([]*chan threads.Internal, n)
-	recordAddChannels := make([]*chan threads.RecordAdd, n)
-	recordConfirmChannels := make([]*chan *common.Record, n)
+	blockConfirmChannels := make([]chan threads.MessageBool, n)
+	blockMinedChannels := make([]chan threads.MessageBlock, n)
+	recordAddChannels := make([]chan threads.RecordAdd, n)
+	recordConfirmChannels := make([]chan *common.Record, n)
 	for i := uint(0); i < n; i++ {
-		blockMinedChannel := make(chan threads.Internal)
-		blockMinedChannels[i] = &blockMinedChannel
+		blockConfirmChannel := make(chan threads.MessageBool)
+		blockConfirmChannels[i] = blockConfirmChannel
+
+		blockMinedChannel := make(chan threads.MessageBlock)
+		blockMinedChannels[i] = blockMinedChannel
 
 		recordAddChannel := make(chan threads.RecordAdd)
-		recordAddChannels[i] = &recordAddChannel
+		recordAddChannels[i] = recordAddChannel
 
 		recordConfirmChannel := make(chan *common.Record)
-		recordConfirmChannels[i] = &recordConfirmChannel
+		recordConfirmChannels[i] = recordConfirmChannel
 	}
 
-	return blockMinedChannels, recordAddChannels, recordConfirmChannels
+	return blockConfirmChannels, blockMinedChannels, recordAddChannels, recordConfirmChannels
 }
 
 func initThreads(nodes []*threads.Node, d float64, n int) {
@@ -70,9 +76,9 @@ func initThreads(nodes []*threads.Node, d float64, n int) {
 func main() {
 	fmt.Println("***** ******") // +1
 
-	numOfNodes := flag.Uint("nodes", 2, "an unsigned int")
-	miningDivisor := flag.Float64("d", 0.01, "a float")
-	numOfSidelinks := flag.Int("n", 8, "an int")
+	numOfNodes := flag.Uint("nodes", 6, "an unsigned int")
+	miningDivisor := flag.Float64("d", 4, "a float")
+	numOfSidelinks := flag.Int("n", 5, "an int")
 
 	flag.Parse()
 	fmt.Println("number of nodes: ", *numOfNodes)

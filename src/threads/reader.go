@@ -26,18 +26,12 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case i := <-node.readerChannelBlockMined:
-			node.chainMutex.Lock()
-			node.state.blockId = i.blockId
-			node.state.blockPoW = i.blockPoW
-			node.state.Timestamp = i.Timestamp
-			node.chainMutex.Unlock()
 		case addedRecordData := <-node.readerChannelRecordAdd:
 			senderId := addedRecordData.sender
 			addedrecordPtr := addedRecordData.record
 			addedRecord := *(addedrecordPtr)
 			// Send a confirmation to the sender
-			*node.writerChannelsRecordConfirm[senderId] <- addedrecordPtr
+			node.writerChannelsRecordConfirm[senderId] <- addedrecordPtr
 			// Check content
 			recordId := addedRecord.Index
 			ts := addedRecord.Timestamp
@@ -60,10 +54,12 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 					Record: myNewRecord,
 					uint:   1,
 				}
+				node.chainMutex.Lock()
 				node.awaitingRecords = append(node.awaitingRecords, awaiting)
+				node.chainMutex.Unlock()
 				for idx := uint(0); idx < node.networkSize; idx++ {
 					if idx != node.index {
-						*node.writerChannelsRecordAdd[idx] <- RecordAdd{record: &myNewRecord, sender: node.index}
+						node.writerChannelsRecordAdd[idx] <- RecordAdd{record: &myNewRecord, sender: node.index}
 					}
 				}
 			}
@@ -80,11 +76,74 @@ func Reader(node *Node, wg *sync.WaitGroup) {
 					node.currentBlock.Records = append(node.currentBlock.Records, node.awaitingRecords[foundIdx].Record)
 					node.awaitingRecords = append(node.awaitingRecords[:foundIdx], node.awaitingRecords[foundIdx+1:]...)
 					// node.hasNewConfirmedRecords = true
-					node.NewRecordChannel <- node.awaitingRecords[foundIdx].Record
+					node.NewRecordChannel <- node.currentBlock.Records[len(node.currentBlock.Records)-1]
 				}
 			}
 			node.recordMutex.Unlock()
+		case message := <-node.readerChannelBlockMined:
+			newBlock := message.block
+			node.chainMutex.Lock()
+			if node.waitingForApproval {
+				node.acceptChannel <- message
+
+			}
+			if verifyBlock(&newBlock) {
+
+				if compareHash(newBlock.MainHash, node.currentBlock.MainHash) {
+
+					// fmt.Printf("Node %v Im here\n", node.index)
+					node.Chain = append(node.Chain, newBlock)
+					node.lastBlock = &node.Chain[len(node.Chain)-1]
+					node.minerStop = true
+
+					notAddedRecords := make([]common.Record, 0)
+
+				outerLoop:
+					for _, rec := range node.currentBlock.Records {
+
+						for _, addRec := range newBlock.Records {
+							if rec.Index == addRec.Index {
+								break outerLoop
+							}
+						}
+						notAddedRecords = append(notAddedRecords, rec)
+					}
+
+					node.currentBlock.Records = notAddedRecords
+					for _, rec := range notAddedRecords {
+						node.NewRecordChannel <- rec
+
+					}
+				}
+				// fmt.Printf("Node %v Sent confirmation\n", node.index)
+
+				node.acceptChannel <- message
+			} else {
+				node.rejectChannel <- message
+			}
+			node.chainMutex.Unlock()
+
+		case accepted := <-node.readerChannelBlockConfirmation:
+			node.chainMutex.Lock()
+			// fmt.Printf("Node %v got something\n", node.index)
+
+			if !accepted.b {
+				continue
+			}
+
+			node.currentAcceptance++
+			// fmt.Printf("Node %v got acceptance %v\n", node.index, node.currentAcceptance)
+
+			if node.currentAcceptance == node.networkSize-1 {
+				// fmt.Printf("Node %v all accepted\n", node.index)
+
+				node.Chain = append(node.Chain, node.currentBlock)
+				node.lastBlock = &node.Chain[len(node.Chain)-1]
+				node.currentAcceptance = 0
+			}
+			node.chainMutex.Unlock()
 		}
+
 	}
 }
 
@@ -101,4 +160,14 @@ func verifyBlock(block *common.Block) bool {
 
 	return TokenValue(token) < math.Pow(2.0, -d)
 
+}
+
+func compareHash(h1, h2 []byte) bool {
+	for i := range h1 {
+		if h1[i] != h2[i] {
+			return false
+		}
+	}
+
+	return true
 }
