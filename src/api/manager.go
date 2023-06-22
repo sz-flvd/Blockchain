@@ -10,30 +10,25 @@ import (
 )
 
 type Manager struct {
-	Nodes       []*threads.Node
-	recordIndex uint32
+	Nodes []*threads.Node
 }
 
 // Fun fact: I believe that return type (*something, error) is actually a monad 'Either'
 func (manager *Manager) AddRecord(request AddRecordRequest) (*AddRecordResponse, error) {
 	content := request.Content
 
-	for _, trans := range content {
-		// manager.recordIndex++
-
-		for _, i := range request.Receivers {
+	for _, i := range request.Receivers {
+		for _, trans := range content {
 			if i < len(manager.Nodes) {
-				manager.Nodes[i].NewRecordChannel <- common.Record{Content: trans, Index: manager.recordIndex}
+				manager.Nodes[i].NewRecordChannel <- common.Record{Content: trans}
 			}
 		}
 	}
 
 	if len(request.Receivers) == 0 {
 		for _, trans := range content {
-			manager.recordIndex++
-
 			for i := range manager.Nodes {
-				manager.Nodes[i].NewRecordChannel <- common.Record{Content: trans, Index: manager.recordIndex}
+				manager.Nodes[i].NewRecordChannel <- common.Record{Content: trans}
 			}
 		}
 	}

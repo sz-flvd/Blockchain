@@ -12,10 +12,3 @@
 [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
 Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
 [GIN-debug] Listening and serving HTTP on localhost:8080
-[GIN] 2023/06/22 - 02:05:28 | 201 |     107.331µs |       127.0.0.1 | POST     "/blockchain"
-[GIN] 2023/06/22 - 02:05:39 | 200 |     414.045µs |       127.0.0.1 | GET      "/blockchain/local/0"
-[GIN] 2023/06/22 - 02:05:42 | 200 |      75.732µs |       127.0.0.1 | GET      "/blockchain/local/1"
-[GIN] 2023/06/22 - 02:06:40 | 201 |     182.662µs |       127.0.0.1 | POST     "/blockchain"
-[GIN] 2023/06/22 - 02:06:44 | 200 |      59.411µs |       127.0.0.1 | GET      "/blockchain/local/0"
-[GIN] 2023/06/22 - 02:06:58 | 200 |     126.677µs |       127.0.0.1 | GET      "/blockchain/local/2"
-[GIN] 2023/06/22 - 02:07:03 | 200 |      35.887µs |       127.0.0.1 | GET      "/blockchain/local/5"

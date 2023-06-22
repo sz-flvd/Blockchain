@@ -11,6 +11,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -35,15 +36,12 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 		// if !ok {
 		// 	return
 		// }
-		record.Timestamp = time.Now().UnixNano()
-
 		records := []common.Record{record}
 
 	scanAllRecords:
 		for {
 			select {
 			case nT := <-node.NewRecordChannel:
-				nT.Timestamp = time.Now().UnixNano()
 				records = append(records, nT)
 			case <-time.After(1 * time.Millisecond):
 				break scanAllRecords
@@ -51,27 +49,31 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 		}
 
 		data, newBlock := prepareBlockAndData(node, records)
-		node.currentBlock = newBlock
 		h := sha256.Sum256(data)
 		mined := false
 
 		b := make([]byte, l/2)
 		var timestamp int64
 		for {
-			node.chainMutex.Lock()
-			if node.minerStop {
-				node.chainMutex.Unlock()
-				break
-			}
-			node.chainMutex.Unlock()
+
 			rand.Read(b)
 			// pick random b
 			token := sha256.Sum256(append(h[:], b...))
 			timestamp = time.Now().UnixNano()
-			// fmt.Printf("Node %v calculating hash value = %v vs diff %v\n", node.index, TokenValue(token), math.Pow(2.0, -d))
+			fmt.Printf("Node %v calculating hash value = %v vs diff %v\n", node.index, TokenValue(token), math.Pow(2.0, -d))
 			if TokenValue(token) < math.Pow(2.0, -d) {
 				mined = true
 				break
+			} else if node.state.blockPoW != nil { // this needs some synchronization!!!
+				// I guess it can work this way, that checking elements of the chain has to be synchronized
+				// we may on the other hand consider creating separate thread that will provide synchronized RW actions on chain
+				// through usage of select statement
+				node.chainMutex.Lock()
+				if node.state.blockId != node.lastBlock.Index {
+				    node.chainMutex.Unlock()
+					break
+				}
+				node.chainMutex.Unlock()
 			}
 			select {
 			case newTransaction := <-node.NewRecordChannel:
@@ -80,28 +82,19 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 				for {
 					select {
 					case nT := <-node.NewRecordChannel:
-						nT.Timestamp = time.Now().UnixNano()
 						records = append(records, nT)
 					case <-time.After(1 * time.Millisecond):
 						break readerLoop
 					}
 				}
 				data, newBlock = prepareBlockAndData(node, records)
-				node.currentBlock = newBlock
-
 				h = sha256.Sum256(data)
 				mined = false
 			case <-time.After(1 * time.Millisecond):
 
 			}
-			node.chainMutex.Lock()
-			if node.minerStop {
-				node.chainMutex.Unlock()
-				break
-			}
-			node.chainMutex.Unlock()
 		}
-		// fmt.Printf("Node %v done \n", node.index)
+		fmt.Printf("Node %v done \n", node.index)
 		// We need something here to synchronize with all other nodes, that they accept out firsthood
 		// i propose something like channel waiting for 8 messeges, if all are OK then accept
 		// in case anyone does not accept we need to figure out some protocol
@@ -111,19 +104,20 @@ func Miner(node *Node, wg *sync.WaitGroup, divisor float64, sidelinks int) {
 		// And if we accept someones else block, we have to calculate hash with PoW to prove it
 
 		if mined {
-			node.currentBlock = newBlock
-			node.currentBlock.Timestamp = timestamp
-			node.currentBlock.PoW = b
-			node.minerChannel <- node.currentBlock
+			newBlock.PoW = b
+			newBlock.Timestamp = timestamp
+			node.minerChannel <- Internal{
+				blockId:   newBlock.Index,
+				blockPoW:  b,
+				Timestamp: timestamp,
+			}
+		} else {
+			newBlock.PoW = node.state.blockPoW
+			newBlock.Timestamp = node.state.Timestamp
 		}
-		// 	newBlock.PoW = node.state.blockPoW
-		// 	newBlock.Timestamp = node.state.Timestamp
-		// }
 
-		// node.chainMutex.Lock()
-		// node.Chain = append(node.Chain, newBlock)
-		// node.lastBlock = &node.Chain[len(node.Chain)-1]
-		// node.chainMutex.Unlock()
+		node.Chain = append(node.Chain, newBlock)
+		node.lastBlock = &node.Chain[len(node.Chain)-1]
 	}
 }
 
