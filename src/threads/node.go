@@ -19,82 +19,59 @@ type RecordAdd struct {
 	sender uint
 }
 
-type MessageBool struct {
-	b  bool
-	id uint
-}
-
-type MessageBlock struct {
-	block common.Block
-	id    uint
-}
-
 /* Structure shared by all miner subthreads */
 type Node struct {
-	index                           uint
-	networkSize                     uint
-	NewRecordChannel                chan common.Record
-	readerChannelBlockMined         chan MessageBlock // this is the channel on which Reader waits for information about newly mined blocks
-	readerChannelBlockConfirmation  chan MessageBool
-	readerChannelRecordAdd          chan RecordAdd      // Reader gets info about newly added records.
-	readerChannelRecordConfirm      chan *common.Record // Reader gets confirmation from other Nodes about his newly added record.
-	minerChannel                    chan common.Block   // Miner will inform Writer about a newly mined Block through this channel
-	rejectChannel                   chan MessageBlock
-	acceptChannel                   chan MessageBlock
-	writerChannelsBlockMined        []chan MessageBlock // Writer will write to all of these channels when a new Block is mined by this Node
-	writerChannelsBlockConfirmation []chan MessageBool
-	writerChannelsRecordAdd         []chan RecordAdd
-	writerChannelsRecordConfirm     []chan *common.Record
+	index                       uint
+	networkSize                 uint
+	NewRecordChannel            chan common.Record
+	readerChannelBlockMined     chan Internal       // this is the channel on which Reader waits for information about newly mined blocks
+	readerChannelRecordAdd      chan RecordAdd      // Reader gets info about newly added records.
+	readerChannelRecordConfirm  chan *common.Record // Reader gets confirmation from other Nodes about his newly added record.
+	minerChannel                chan Internal       // Miner will inform Writer about a newly mined Block through this channel
+	writerChannelsBlockMined    []*chan Internal    // Writer will write to all of these channels when a new Block is mined by this Node
+	writerChannelsRecordAdd     []*chan RecordAdd
+	writerChannelsRecordConfirm []*chan *common.Record
 	/* 	Internal state of Node (naming may need to be adjusted;
 	Reader will update this when a new block is mined outside of this Node
 	and Miner will check if it still needs to mine the current Block by reading any updates in this struct) */
-	state             Internal       // So i figure access to this AND Chain has to be synced?
-	Chain             []common.Block // Holds all Blocks mined in the current session
-	lastBlock         *common.Block  // pointer to last Block mined in the current session (idk if this will be needed)
-	currentBlock      common.Block   // block we're currently calculating PoW on.
-	currentAcceptance uint
-	chainMutex        sync.Mutex
-	recordMutex       sync.Mutex
+	state        Internal       // So i figure access to this AND Chain has to be synced?
+	Chain        []common.Block // Holds all Blocks mined in the current session
+	lastBlock    *common.Block  // pointer to last Block mined in the current session (idk if this will be needed)
+	currentBlock common.Block   // block we're currently calculating PoW on.
+	chainMutex   sync.Mutex
+	recordMutex  sync.Mutex
 	// hasNewConfirmedRecords bool
 	awaitingRecords []struct {
 		common.Record
 		uint
 	}
-	minerStop          bool
-	waitingForApproval bool
 }
 
 func Node_CreateNode(
 	index uint,
 	networkSize uint,
-	readerChannelBlockMined chan MessageBlock,
-	readerChannelBlockConfirmation chan MessageBool,
+	readerChannelBlockMined chan Internal,
 	readerChannelRecordAdd chan RecordAdd,
 	readerChannelRecordConfirm chan *common.Record,
-	writerChannelsBlockMined []chan MessageBlock,
-	writerChannelsBlockConfirmation []chan MessageBool,
-	writerChannelsRecordAdd []chan RecordAdd,
-	writerChannelsRecordConfirm []chan *common.Record,
+	writerChannelsBlockMined []*chan Internal,
+	writerChannelsRecordAdd []*chan RecordAdd,
+	writerChannelsRecordConfirm []*chan *common.Record,
 ) *Node {
 	newNode := &Node{
-		index:                           index,
-		networkSize:                     networkSize,
-		NewRecordChannel:                make(chan common.Record, 8),
-		readerChannelBlockMined:         readerChannelBlockMined,
-		readerChannelBlockConfirmation:  readerChannelBlockConfirmation,
-		readerChannelRecordAdd:          readerChannelRecordAdd,
-		readerChannelRecordConfirm:      readerChannelRecordConfirm,
-		minerChannel:                    make(chan common.Block),
-		rejectChannel:                   make(chan MessageBlock),
-		acceptChannel:                   make(chan MessageBlock),
-		writerChannelsBlockConfirmation: writerChannelsBlockConfirmation,
-		writerChannelsBlockMined:        writerChannelsBlockMined,
-		writerChannelsRecordAdd:         writerChannelsRecordAdd,
-		writerChannelsRecordConfirm:     writerChannelsRecordConfirm,
-		state:                           Internal{},
-		Chain:                           make([]common.Block, 0),
-		chainMutex:                      sync.Mutex{},
-		recordMutex:                     sync.Mutex{},
+		index:                       index,
+		networkSize:                 networkSize,
+		NewRecordChannel:            make(chan common.Record, 8),
+		readerChannelBlockMined:     readerChannelBlockMined,
+		readerChannelRecordAdd:      readerChannelRecordAdd,
+		readerChannelRecordConfirm:  readerChannelRecordConfirm,
+		minerChannel:                make(chan Internal),
+		writerChannelsBlockMined:    writerChannelsBlockMined,
+		writerChannelsRecordAdd:     writerChannelsRecordAdd,
+		writerChannelsRecordConfirm: writerChannelsRecordConfirm,
+		state:                       Internal{},
+		Chain:                       make([]common.Block, 0),
+		chainMutex:                  sync.Mutex{},
+		recordMutex:                 sync.Mutex{},
 		// hasNewConfirmedRecords:      false,
 		awaitingRecords: make([]struct {
 			common.Record
