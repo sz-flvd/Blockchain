@@ -95,3 +95,14 @@ func isBlockConfirmed(manager *Manager, index int) bool {
 
 	return true
 }
+
+// Cryptocurrency
+func (manager *Manager) GetNode(index int) (*GetNodeResponse, error) {
+	if index >= len(manager.Nodes) {
+		return nil, errors.New("Incorrect node id: " + strconv.Itoa(index))
+	}
+
+	response := GetNodeResponse{NodeResponce: manager.Nodes[index]}
+
+	return &response, nil
+}

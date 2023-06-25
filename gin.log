@@ -9,6 +9,10 @@
 [GIN-debug] GET    /blockchain/count         --> krypto.blockchain/src/api.(*BlockchainServer).getCount-fm (3 handlers)
 [GIN-debug] POST   /blockchain               --> krypto.blockchain/src/api.(*BlockchainServer).postRecord-fm (3 handlers)
 [GIN-debug] GET    /blockchain/quit          --> krypto.blockchain/src/api.(*BlockchainServer).quit-fm (3 handlers)
+[GIN-debug] GET    /blockchain/nodes/:idx    --> krypto.blockchain/src/api.(*BlockchainServer).getNode-fm (3 handlers)
 [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
 Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
 [GIN-debug] Listening and serving HTTP on localhost:8080
+[GIN] 2023/06/25 - 22:03:27 | 200 |     414.701µs |       127.0.0.1 | GET      "/blockchain/local/2"
+[GIN] 2023/06/25 - 22:03:27 | 200 |       177.1µs |       127.0.0.1 | GET      "/blockchain/nodes/2"
+Error #01: json: unsupported type: chan common.Record
