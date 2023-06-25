@@ -1,7 +1,10 @@
 package api
 
 import (
+	"crypto/ecdsa"
+
 	"krypto.blockchain/src/common"
+	// "krypto.blockchain/src/threads"
 )
 
 /* Request for adding a new record to blockchain */
@@ -22,3 +25,16 @@ type GetBlockResponse struct {
 type GetLocalBlockchainResponse struct {
 	Blocks []common.Block // the current blockchain of the specific node, including unconfirmed blocks
 }
+
+// Cryptocurrency
+type GetPublicKeyResponse struct {
+	PublicKey *ecdsa.PublicKey
+}
+
+type GetPrivateKeyResponse struct {
+	PrivateKey *ecdsa.PrivateKey
+}
+
+// type GetNodeResponse struct { // XD
+// 	NodeField *threads.Node
+// }

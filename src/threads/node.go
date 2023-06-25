@@ -1,6 +1,13 @@
 package threads
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	// "crypto/sha256"
+	// "crypto/x509"
+	// "encoding/asn1"
+	"fmt"
 	"sync"
 	"time"
 
@@ -45,6 +52,9 @@ type Node struct {
 		common.Record
 		uint
 	}
+	// Currency wallet
+	privateKey *ecdsa.PrivateKey
+	PublicKey  *ecdsa.PublicKey
 }
 
 func Node_CreateNode(
@@ -57,6 +67,14 @@ func Node_CreateNode(
 	writerChannelsRecordAdd []*chan RecordAdd,
 	writerChannelsRecordConfirm []*chan *common.Record,
 ) *Node {
+	// Cryptocurrency
+	walletKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		fmt.Println("Error generating ECDSA key pair:", err)
+		return nil
+	}
+	// fmt.Println(string((*walletKey.PublicKey.X).String()))
+
 	newNode := &Node{
 		index:                       index,
 		networkSize:                 networkSize,
@@ -77,6 +95,8 @@ func Node_CreateNode(
 			common.Record
 			uint
 		}, 0),
+		privateKey: walletKey,
+		PublicKey:  &walletKey.PublicKey,
 	}
 
 	genesisBlock := common.Block{
@@ -122,4 +142,9 @@ func (node *Node) FindRecordContainingContent(content string) (*common.Record, u
 	}
 
 	return nil, 0, false
+}
+
+// Cryptocurrency
+func (node *Node) AccessPrivateKey() *ecdsa.PrivateKey {
+	return node.privateKey
 }
