@@ -1,0 +1,23 @@
+Nody muszą mieć pole "klucz publiczby" oraz "klucz prywatny".
+
+Liczenie salda konta to sprawdzenie rekordów w BC takich, które zawierają klucz publiczny danego noda.
+
+Nie rozumiem jak side linki mają nam pomóc z przyspieszeniem liczenia sald xd
+W sensie może wraz z side linkami przehcowywać informacje o saldzie wszystkich nodeów z tamtych bloków? Ale wtedy mamy lsoowe informacje o saldach.
+Może przechowywać informacje o saldach nodów jakie były w poprzednim bloku?
+
+Trzeba jakoś rozróżnić rekordy transakcji od zwykłych rekordów. Rekordy transakcji muszą zawierać klucz publiczny sendera, klucz publiczny receivera oraz kwotę przelaną.
+
+W momencie gdy jakiś node policzy PoW, Netowrk nagradza go transakcją od niego do noda z jakąś kwotą.
+Pytanie: gdzie umieścić ten nowy rekord? Najłatwiej pewnie w tym potwierdzonym bloku.
+
+PoW trzeba lekko zmienić: Hash(data) -> Sign(key, data).
+Według nich najlepiej żebyśmy użyli krzywych eliptycznych.
+
+Musimy mieć CLI:
+- check_balance(public_key),
+- transfer(sender_private_key, receiver_public_key, amount).
+
+ofc nie można przelać więcej niż się ma na koncie. Wszystkie nody zaczynają z bilansem 0.
+
+

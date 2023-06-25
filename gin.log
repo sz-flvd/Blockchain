@@ -9,13 +9,14 @@
 [GIN-debug] GET    /blockchain/count         --> krypto.blockchain/src/api.(*BlockchainServer).getCount-fm (3 handlers)
 [GIN-debug] POST   /blockchain               --> krypto.blockchain/src/api.(*BlockchainServer).postRecord-fm (3 handlers)
 [GIN-debug] GET    /blockchain/quit          --> krypto.blockchain/src/api.(*BlockchainServer).quit-fm (3 handlers)
+[GIN-debug] GET    /blockchain/public/:idx   --> krypto.blockchain/src/api.(*BlockchainServer).getPublicKey-fm (3 handlers)
 [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
 Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
 [GIN-debug] Listening and serving HTTP on localhost:8080
-[GIN] 2023/06/22 - 02:05:28 | 201 |     107.331µs |       127.0.0.1 | POST     "/blockchain"
-[GIN] 2023/06/22 - 02:05:39 | 200 |     414.045µs |       127.0.0.1 | GET      "/blockchain/local/0"
-[GIN] 2023/06/22 - 02:05:42 | 200 |      75.732µs |       127.0.0.1 | GET      "/blockchain/local/1"
-[GIN] 2023/06/22 - 02:06:40 | 201 |     182.662µs |       127.0.0.1 | POST     "/blockchain"
-[GIN] 2023/06/22 - 02:06:44 | 200 |      59.411µs |       127.0.0.1 | GET      "/blockchain/local/0"
-[GIN] 2023/06/22 - 02:06:58 | 200 |     126.677µs |       127.0.0.1 | GET      "/blockchain/local/2"
-[GIN] 2023/06/22 - 02:07:03 | 200 |      35.887µs |       127.0.0.1 | GET      "/blockchain/local/5"
+[GIN] 2023/06/25 - 23:26:20 | 200 |     110.204µs |       127.0.0.1 | GET      "/blockchain/public/1"
+[GIN] 2023/06/25 - 23:26:20 | 200 |      52.602µs |       127.0.0.1 | GET      "/blockchain/public/2"
+[GIN] 2023/06/25 - 23:26:20 | 201 |     154.206µs |       127.0.0.1 | POST     "/blockchain"
+[GIN] 2023/06/25 - 23:26:23 | 200 |     358.913µs |       127.0.0.1 | GET      "/blockchain/local/1"
+[GIN] 2023/06/25 - 23:26:23 | 200 |      18.401µs |       127.0.0.1 | GET      "/blockchain/public/1"
+[GIN] 2023/06/25 - 23:26:26 | 200 |      43.502µs |       127.0.0.1 | GET      "/blockchain/local/2"
+[GIN] 2023/06/25 - 23:26:26 | 200 |      25.501µs |       127.0.0.1 | GET      "/blockchain/public/2"
