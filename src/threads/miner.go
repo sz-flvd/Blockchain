@@ -171,7 +171,9 @@ func calcBlockHash(b *common.Block) []byte {
 
 func calcSidelinks(chain []common.Block) [][]byte {
 	sidelinks := make([][]byte, 0)
-	if len(chain) <= n {
+	I := int(chain[len(chain)-1].Index) + 1
+
+	if I <= n {
 		for _, block := range chain {
 			sidelinks = append(sidelinks, calcBlockHash(&block)[:])
 		}
@@ -179,12 +181,10 @@ func calcSidelinks(chain []common.Block) [][]byte {
 		return sidelinks
 	}
 
-	I := len(chain)
-
 	prevHash := calcBlockHash(&chain[len(chain)-1])
-	sidelinks = append(sidelinks, prevHash)
 
 	indexes := make([]int, 0)
+	indexes = append(indexes, len(chain)-1)
 
 	x := prevHash
 	howManyBytes := int(math.Ceil(float64(n) / float64(8)))
@@ -196,9 +196,12 @@ func calcSidelinks(chain []common.Block) [][]byte {
 	}
 
 	indexes = append(indexes, xIntVal%(I-1))
-	for j := 1; j < n; j++ {
-		byteHelper := make([]byte, 0)
+	for j := 2; j < n; j++ {
+		byteHelper := make([]byte, 8)
 		binary.LittleEndian.PutUint64(byteHelper, uint64(j))
+		for i, j := 0, len(byteHelper)-1; i < j; i, j = i+1, j-1 {
+			byteHelper[i], byteHelper[j] = byteHelper[j], byteHelper[i]
+		}
 		xj := sha256.Sum256(append(x, byteHelper...))
 
 		xjIntVal := 0
@@ -210,10 +213,10 @@ func calcSidelinks(chain []common.Block) [][]byte {
 
 		nj := xjIntVal % (I - (j + 1))
 
-		for k, nk := range indexes {
-			if nj == nk {
+		for k := 0; k < len(indexes); k++ {
+			if nj == indexes[k] {
 				nj = I - j + k - 1
-				break
+				k = 0
 			}
 		}
 
@@ -223,6 +226,5 @@ func calcSidelinks(chain []common.Block) [][]byte {
 	for _, index := range indexes {
 		sidelinks = append(sidelinks, calcBlockHash(&chain[index]))
 	}
-
 	return sidelinks
 }
