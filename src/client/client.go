@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"krypto.blockchain/src/api"
@@ -129,7 +130,7 @@ func getBalance() {
 		fmt.Println(err.Error())
 		return
 	}
-	responseNode, err := http.Get("http://localhost:8080/blockchain/nodes/" + id)
+	responseNode, err := http.Get("http://localhost:8080/blockchain/public/" + id)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -138,36 +139,52 @@ func getBalance() {
 	responseData, _ := ioutil.ReadAll(response.Body)
 	blockchainStr := string(responseData)
 
-	responseNodeData, _ := ioutil.ReadAll(responseNode.Body)
-	// publicKeyStr := responseNodeData.publicKey.String()
-	fmt.Println(string(responseNodeData) + "XXDDD")
+	responseKeyData, _ := ioutil.ReadAll(responseNode.Body)
+	publicKeyStr := string(responseKeyData)
+	// fmt.Println(string(responseKeyData) + "XXDDD")
 
 	lines := strings.Split(blockchainStr, "\n")
 
-	contentBeginIdx := 0
-	// contentEndIdx := 0
+	walletValue := 0
 	for lineIdx, line := range lines {
-		// modifiedLine := line + "xD"
-		// fmt.Println(modifiedLine)
 		if strings.Contains(line, "\"Records\": [") {
-			contentBeginIdx = lineIdx
-			myIdx := contentBeginIdx + 1
+			myIdx := lineIdx
 			for {
 				if strings.Contains(lines[myIdx], "]") {
-					// contentEndIdx = myIdx
 					break
+				}
+				recordLine := strings.Split(lines[myIdx], "$")
+				if len(recordLine) == 5 && strings.Contains(recordLine[0], "Content") {
+					// If he's a receiver
+					if strings.Compare(recordLine[2], publicKeyStr) == 0 {
+						value, err := strconv.Atoi(recordLine[3])
+						if err == nil {
+							// fmt.Println("!!!1")
+							walletValue += value
+						}
+					}
+					// If he's a sender
+					if strings.Compare(recordLine[1], publicKeyStr) == 0 {
+						value, err := strconv.Atoi(recordLine[3])
+						if err == nil {
+							// fmt.Println("!!!2")
+							walletValue -= value
+						}
+					}
 				}
 				myIdx++
 			}
 		}
 	}
-	// fmt.Println(string(responseData))
+	// fmt.Println("!!!3")
+	fmt.Print("Balance: ")
+	fmt.Println(walletValue)
 }
 
 func addTransfer() {
 	var senderId string
 	var receiverId string
-	var amount int
+	var amount string
 	var data []string
 
 	fmt.Println("Provide sender id")
@@ -180,19 +197,23 @@ func addTransfer() {
 
 	fmt.Println("Provide amount of money to transfer")
 
-	fmt.Scanf("%d", amount)
+	fmt.Scanln(&amount)
 
-	for {
-		singleTransaction := ""
-		fmt.Scanln(&singleTransaction)
-
-		if singleTransaction == "" {
-			break
-		}
-
-		data = append(data, singleTransaction)
-
+	senderPublicKeyResponse, err := http.Get("http://localhost:8080/blockchain/public/" + senderId)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
 	}
+	receiverPublicKeyResponse, err := http.Get("http://localhost:8080/blockchain/public/" + receiverId)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	senderPublicKey, _ := ioutil.ReadAll(senderPublicKeyResponse.Body)
+	receiverPublicKey, _ := ioutil.ReadAll(receiverPublicKeyResponse.Body)
+	recordInfo := "$" + string(senderPublicKey) + "$" + string(receiverPublicKey) + "$" + string(amount) + "$"
+	data = append(data, recordInfo)
 
 	// for now (and possibly for ever) we send requests to all nodes
 	request := api.AddRecordRequest{Content: data, Receivers: []int{}}

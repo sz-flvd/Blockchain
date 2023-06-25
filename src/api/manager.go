@@ -97,12 +97,22 @@ func isBlockConfirmed(manager *Manager, index int) bool {
 }
 
 // Cryptocurrency
-func (manager *Manager) GetNode(index int) (*GetNodeResponse, error) {
+func (manager *Manager) GetPublicKey(index int) (*GetPublicKeyResponse, error) {
 	if index >= len(manager.Nodes) {
 		return nil, errors.New("Incorrect node id: " + strconv.Itoa(index))
 	}
 
-	response := GetNodeResponse{NodeResponce: manager.Nodes[index]}
+	response := GetPublicKeyResponse{PublicKey: manager.Nodes[index].PublicKey}
 
 	return &response, nil
 }
+
+// func (manager *Manager) GetPrivateKey(index int) (*GetPublicKeyResponse, error) {
+// 	if index >= len(manager.Nodes) {
+// 		return nil, errors.New("Incorrect node id: " + strconv.Itoa(index))
+// 	}
+
+// 	response := GetPublicKeyResponse{PublicKey: manager.Nodes[index].PublicKey}
+
+// 	return &response, nil
+// }

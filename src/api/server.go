@@ -34,7 +34,7 @@ func (server *BlockchainServer) Run(blockchainManager *Manager) {
 	router.POST("/blockchain", server.postRecord)
 	router.GET("/blockchain/quit", server.quit)
 	// Cryptocurrency
-	router.GET("/blockchain/nodes/:idx", server.getNode)
+	router.GET("/blockchain/public/:idx", server.getPublicKey)
 
 	router.Run("localhost:8080")
 }
@@ -100,22 +100,26 @@ func (server *BlockchainServer) quit(c *gin.Context) {
 }
 
 // Cryptocurrency
-func (server *BlockchainServer) getNode(c *gin.Context) {
+func (server *BlockchainServer) getPublicKey(c *gin.Context) {
 	param := c.Param("idx")
 	index, err := strconv.Atoi(param)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
-	response, err := server.manager.GetNode(index)
+	response, err := server.manager.GetPublicKey(index)
 
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	} else {
-		c.IndentedJSON(http.StatusOK, response)
+		// fmt.Println(response.PublicKey.X.String())
+		c.IndentedJSON(http.StatusOK, response.PublicKey.X)
 	}
 
 	// fmt.Println(string(response))
+
+	// count := server.manager.GetBlockCount()
+	// c.IndentedJSON(http.StatusOK, count)
 }
 
 // I'm extremely proud of this function

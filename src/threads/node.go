@@ -54,7 +54,7 @@ type Node struct {
 	}
 	// Currency wallet
 	privateKey *ecdsa.PrivateKey
-	publicKey  *ecdsa.PublicKey
+	PublicKey  *ecdsa.PublicKey
 }
 
 func Node_CreateNode(
@@ -96,7 +96,7 @@ func Node_CreateNode(
 			uint
 		}, 0),
 		privateKey: walletKey,
-		publicKey:  &walletKey.PublicKey,
+		PublicKey:  &walletKey.PublicKey,
 	}
 
 	genesisBlock := common.Block{
@@ -142,4 +142,9 @@ func (node *Node) FindRecordContainingContent(content string) (*common.Record, u
 	}
 
 	return nil, 0, false
+}
+
+// Cryptocurrency
+func (node *Node) AccessPrivateKey() *ecdsa.PrivateKey {
+	return node.privateKey
 }
